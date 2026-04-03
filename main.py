@@ -7,7 +7,15 @@ API_KEY = "MY_SECRET_123"
 @app.post("/analyze")
 async def analyze(file: UploadFile = File(...), authorization: str = Header(None)):
     
-    if authorization != f"Bearer {API_KEY}":
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    if "Bearer" not in authorization:
+        raise HTTPException(status_code=401, detail="Invalid token format")
+
+    token = authorization.split(" ")[1]
+
+    if token != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     content = await file.read()
@@ -15,10 +23,7 @@ async def analyze(file: UploadFile = File(...), authorization: str = Header(None
 
     summary = text[:100]
 
-    entities = []
-    for word in text.split():
-        if word.istitle():
-            entities.append(word)
+    entities = [word for word in text.split() if word.istitle()]
 
     sentiment = "neutral"
 
